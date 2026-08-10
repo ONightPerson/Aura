@@ -1,5 +1,10 @@
 package com.lbz.aura.ui.weather
 
+import android.Manifest
+import android.util.Log
+import java.util.Locale
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +26,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,18 +37,43 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lbz.aura.data.model.Cast
+import com.lbz.aura.data.model.Forecast
+import com.lbz.aura.ui.theme.AuraTheme
 
 @Composable
-fun WeatherScreen(
-    viewModel: WeatherViewModel = viewModel()
-) {
+fun WeatherScreen() {
+    val context = LocalContext.current
+    val viewModel: WeatherViewModel = viewModel(
+        factory = WeatherViewModel.Factory(context)
+    )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showCityPicker by remember { mutableStateOf(false) }
+
+    // 权限请求
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        // 如果任何一个权限被授予，尝试重新获取位置
+        if (permissions.values.any { it }) {
+            viewModel.updateLocation()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        permissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -66,6 +97,7 @@ fun WeatherScreen(
             TopCityBar(
                 cityName = uiState.currentCity.name,
                 reportTime = uiState.reportTime,
+                location = uiState.location,
                 onCityClick = { showCityPicker = true },
                 onRefreshClick = { viewModel.refresh() }
             )
@@ -153,6 +185,7 @@ fun WeatherScreen(
 private fun TopCityBar(
     cityName: String,
     reportTime: String,
+    location: Pair<Double, Double>?,
     onCityClick: () -> Unit,
     onRefreshClick: () -> Unit
 ) {
@@ -186,6 +219,17 @@ private fun TopCityBar(
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 )
             }
+            Text(
+                text = String.format(
+                    Locale.getDefault(),
+                    "经度: %.4f  纬度: %.4f",
+                    location?.second ?: 0.0f,
+                    location?.first ?: 0.0f
+                ),
+                color = Color.White.copy(alpha = 0.9f),
+                fontSize = 12.sp,
+                modifier = Modifier.padding(top = 2.dp)
+            )
             if (reportTime.isNotEmpty()) {
                 Text(
                     text = "数据更新: $reportTime",
@@ -268,6 +312,27 @@ private fun WeatherInfoItem(label: String, value: String) {
             text = label,
             color = Color.White.copy(alpha = 0.7f),
             fontSize = 12.sp
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun ForecastPreview() {
+    AuraTheme {
+        ForecastCard(
+            cast = Cast(
+                date = "2027/9/20",
+                week = "1",
+                dayweather = "晴",
+                nightweather = "小雨",
+                daytemp = "31",
+                nighttemp = "29",
+                daywind = "6级",
+                nightwind = "4级",
+                daypower = "1级",
+                nightpower = "1级"
+            )
         )
     }
 }
