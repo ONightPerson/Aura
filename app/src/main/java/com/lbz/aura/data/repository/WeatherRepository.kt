@@ -1,8 +1,8 @@
 package com.lbz.aura.data.repository
 
 import com.lbz.aura.data.model.Forecast
-import com.lbz.aura.data.model.Live
 import com.lbz.aura.data.network.RetrofitClient
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -38,19 +38,19 @@ class WeatherRepository {
      * 获取实况天气
      * 通过 withContext(Dispatchers.IO) 切换到子线程执行网络请求
      */
-    suspend fun getLiveWeather(adcode: String): Result<Live> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val response = apiService.getLiveWeather(key = API_KEY, city = adcode)
-                val live = response.lives?.firstOrNull()
-                if (response.status == "1" && live != null) {
-                    Result.success(live)
-                } else {
-                    Result.failure(Exception("获取实况天气失败: ${response.info ?: "未知错误"}"))
-                }
-            } catch (e: Exception) {
-                Result.failure(e)
+    suspend fun getLiveWeather(adcode: String) = withContext(Dispatchers.IO) {
+        try {
+            val response = apiService.getLiveWeather(key = API_KEY, city = adcode)
+            val live = response.lives?.firstOrNull()
+            if (response.status == "1" && live != null) {
+                Result.success(live)
+            } else {
+                Result.failure(Exception("获取实况天气失败: ${response.info ?: "未知错误"}"))
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 }
