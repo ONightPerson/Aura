@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -136,13 +137,15 @@ class WeatherViewModel(context: Context) : ViewModel() {
                 reportTime = forecast.reporttime
             }.onFailure { errorMsg = it.message }
 
-            _weatherState.value = _weatherState.value.copy(
-                isLoading = false,
-                liveWeather = live,
-                forecastList = casts,
-                reportTime = reportTime,
-                error = if (live == null && casts.isEmpty()) errorMsg else null
-            )
+            _weatherState.update {
+                it.copy(
+                    isLoading = false,
+                    liveWeather = live,
+                    forecastList = casts,
+                    reportTime = reportTime,
+                    error = if (live == null && casts.isEmpty()) errorMsg else null
+                )
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.lbz.aura.data.repository
 
 import com.lbz.aura.data.model.Forecast
+import com.lbz.aura.data.model.Live
 import com.lbz.aura.data.network.RetrofitClient
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -38,7 +39,7 @@ class WeatherRepository {
      * 获取实况天气
      * 通过 withContext(Dispatchers.IO) 切换到子线程执行网络请求
      */
-    suspend fun getLiveWeather(adcode: String) = withContext(Dispatchers.IO) {
+    suspend fun getLiveWeather(adcode: String): Result<Live> =
         try {
             val response = apiService.getLiveWeather(key = API_KEY, city = adcode)
             val live = response.lives?.firstOrNull()
@@ -52,5 +53,4 @@ class WeatherRepository {
         } catch (e: Exception) {
             Result.failure(e)
         }
-    }
 }
