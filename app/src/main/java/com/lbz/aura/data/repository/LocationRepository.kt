@@ -50,8 +50,8 @@ class LocationRepository(private val context: Context) {
             Log.i(TAG, "getLocationUpdates: gps")
             locationManager.requestLocationUpdates(
                 LocationManager.GPS_PROVIDER,
-                3000L,
-                0f,
+                1000L,
+                1f,
                 listener,
                 Looper.getMainLooper()
             )
